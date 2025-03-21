@@ -1,0 +1,25 @@
+version: '3'
+
+services:
+  mcp-creator:
+    build: .
+    image: mcp-creator
+    container_name: mcp-creator
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - MCP_API_KEY=your_mcp_api_key
+      - MCP_BASE_URL=https://api.mcp.com
+    volumes:
+      - mcp-data:/app/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mcp-creator.rule=Host(`mcp.nandus.com.br`)"
+      - "traefik.http.routers.mcp-creator.entrypoints=websecure"
+      - "traefik.http.routers.mcp-creator.tls.certresolver=myresolver"
+      - "traefik.http.services.mcp-creator.loadbalancer.server.port=3000"
+
+volumes:
+  mcp-data:
