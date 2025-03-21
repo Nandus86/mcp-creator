@@ -260,7 +260,7 @@ app.post('/api/tools', async (req, res) => {
   if (!id || !toolSet || !Array.isArray(toolSet)) {
     return res.status(400).json({ error: 'ID and array of tools are required' });
   }
-  // Serializar o toolSet para JSON puro
+  // Serializar o toolSet para JSON puro e converter para string
   const serializedToolSet = toolSet.map((tool: any) => {
     const toolInstance = tool instanceof Tool ? tool : new Tool(tool);
     return {
@@ -271,10 +271,12 @@ app.post('/api/tools', async (req, res) => {
       ),
     };
   });
+  const toolSetString = JSON.stringify(serializedToolSet);
+  console.log('Salvando toolSet:', toolSetString); // Log para depuração
   try {
     await pool.query(
-      'INSERT INTO tools (id, tool_set) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET tool_set = $2',
-      [id, serializedToolSet]
+      'INSERT INTO tools (id, tool_set) VALUES ($1, $2::jsonb) ON CONFLICT (id) DO UPDATE SET tool_set = $2::jsonb',
+      [id, toolSetString]
     );
     res.status(201).json({ id, toolSet: serializedToolSet });
   } catch (error) {
@@ -287,7 +289,7 @@ app.put('/api/tools/:id', async (req, res) => {
   if (!toolSet || !Array.isArray(toolSet)) {
     return res.status(400).json({ error: 'Array of tools is required' });
   }
-  // Serializar o toolSet para JSON puro
+  // Serializar o toolSet para JSON puro e converter para string
   const serializedToolSet = toolSet.map((tool: any) => {
     const toolInstance = tool instanceof Tool ? tool : new Tool(tool);
     return {
@@ -298,10 +300,12 @@ app.put('/api/tools/:id', async (req, res) => {
       ),
     };
   });
+  const toolSetString = JSON.stringify(serializedToolSet);
+  console.log('Atualizando toolSet:', toolSetString); // Log para depuração
   try {
     const result = await pool.query(
-      'UPDATE tools SET tool_set = $1 WHERE id = $2 RETURNING *',
-      [serializedToolSet, req.params.id]
+      'UPDATE tools SET tool_set = $1::jsonb WHERE id = $2 RETURNING *',
+      [toolSetString, req.params.id]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Tool set not found' });
