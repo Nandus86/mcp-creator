@@ -19,8 +19,8 @@ COPY src ./src
 RUN npm run build
 
 # Expor as portas em que as aplicações rodam
-EXPOSE 3000  # Para o mediador (app.ts)
-EXPOSE 3001  # Para o MCP Server (server.ts)
+EXPOSE 3000
+EXPOSE 3001
 
 # Comando para executar a aplicação
 CMD ["node", "dist/start.js"]
