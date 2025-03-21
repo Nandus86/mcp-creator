@@ -19,7 +19,8 @@ COPY src ./src
 RUN npm run build || (echo "Compilação com erros, gerando JS diretamente..." && npx tsc --skipLibCheck --noEmitOnError false)
 
 # Expor a porta em que a aplicação roda
-EXPOSE 3000
+EXPOSE 3000 
+EXPOSE 3001 
 
 # Comando para executar a aplicação
-CMD ["node", "dist/app.js"]
+CMD ["node", "dist/start.js"]

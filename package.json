@@ -2,11 +2,11 @@
     "name": "mcp-creator",
     "version": "1.0.0",
     "description": "MCP Creator application based on Model Context Protocol",
-    "main": "dist/app.js",
+    "main": "dist/start.js",
     "scripts": {
       "build": "tsc",
-      "start": "node dist/app.js",
-      "dev": "ts-node src/app.ts"
+      "start": "node dist/start.js",
+      "dev": "ts-node src/start.ts"
     },
     "dependencies": {
       "@modelcontextprotocol/typescript-sdk": "github:modelcontextprotocol/typescript-sdk",
