@@ -2,23 +2,54 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 
-// Tente importar o SDK MCP
-let MCPClient, Tool;
+// Definição de tipos para evitar erros de TypeScript
+interface Tool {
+  type: string;
+  function?: {
+    name: string;
+    description: string;
+    parameters: any;
+  };
+  [key: string]: any;
+}
+
+interface MCPCompletionParams {
+  messages: any[];
+  model: string;
+  max_tokens?: number;
+  temperature?: number;
+  tools?: any[];
+  tool_choice?: any;
+  stop?: string[];
+  [key: string]: any;
+}
+
+interface MCPClient {
+  chat: {
+    completions: {
+      create: (params: MCPCompletionParams) => Promise<any>;
+    };
+  };
+}
+
+// Implementação simulada ou importação do SDK
+let mcpModule;
 try {
-  const mcpModule = require('@modelcontextprotocol/typescript-sdk');
-  MCPClient = mcpModule.MCPClient;
-  Tool = mcpModule.Tool;
+  mcpModule = require('@modelcontextprotocol/typescript-sdk');
 } catch (error) {
   console.warn('Aviso: Não foi possível importar @modelcontextprotocol/typescript-sdk');
   console.warn('Usando implementação simulada para desenvolvimento');
   
-  // Implementação simulada do MCPClient para desenvolvimento
-  MCPClient = class MCPClient {
-    constructor(config) {
-      this.config = config;
-      this.chat = {
+  // Implementação simulada
+  mcpModule = {
+    MCPClient: class implements MCPClient {
+      constructor(config: any) {
+        console.log('Inicializando MCPClient simulado com config:', config);
+      }
+      
+      chat = {
         completions: {
-          create: async (params) => {
+          create: async (params: MCPCompletionParams) => {
             console.log('Simulando chamada MCP com parâmetros:', params);
             return {
               id: 'sim_' + Date.now(),
@@ -39,15 +70,29 @@ try {
           }
         }
       };
-    }
-  };
-  
-  Tool = class Tool {
-    constructor(params) {
-      Object.assign(this, params);
+    },
+    
+    Tool: class implements Tool {
+      type: string;
+      function?: any;
+      
+      constructor(params: any) {
+        this.type = params.type || 'function';
+        if (params.function) {
+          this.function = params.function;
+        }
+        // Copiar outras propriedades
+        Object.keys(params).forEach(key => {
+          if (key !== 'type' && key !== 'function') {
+            this[key] = params[key];
+          }
+        });
+      }
     }
   };
 }
+
+const { MCPClient, Tool } = mcpModule;
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -58,11 +103,11 @@ app.use(bodyParser.json());
 
 // Store configurations, tools and prompts
 let configurations: Record<string, any> = {};
-let tools: Record<string, any[]> = {};
+let tools: Record<string, Tool[]> = {};
 let prompts: Record<string, string> = {};
 
 // Initialize MCP client
-const mcpClient = new MCPClient({
+const mcpClient: MCPClient = new MCPClient({
   apiKey: process.env.MCP_API_KEY || '',
   baseUrl: process.env.MCP_BASE_URL || 'https://api.mcp.com'
 });
@@ -124,8 +169,13 @@ app.post('/api/tools', (req, res) => {
   if (!id || !toolSet || !Array.isArray(toolSet)) {
     return res.status(400).json({ error: 'ID and array of tools are required' });
   }
-  tools[id] = toolSet;
-  res.status(201).json({ id, toolSet });
+  tools[id] = toolSet.map(tool => {
+    if (tool instanceof Tool) {
+      return tool;
+    }
+    return new Tool(tool);
+  });
+  res.status(201).json({ id, toolSet: tools[id] });
 });
 
 app.put('/api/tools/:id', (req, res) => {
@@ -133,8 +183,13 @@ app.put('/api/tools/:id', (req, res) => {
   if (!toolSet || !Array.isArray(toolSet)) {
     return res.status(400).json({ error: 'Array of tools is required' });
   }
-  tools[req.params.id] = toolSet;
-  res.json({ id: req.params.id, toolSet });
+  tools[req.params.id] = toolSet.map(tool => {
+    if (tool instanceof Tool) {
+      return tool;
+    }
+    return new Tool(tool);
+  });
+  res.json({ id: req.params.id, toolSet: tools[req.params.id] });
 });
 
 app.delete('/api/tools/:id', (req, res) => {
@@ -205,7 +260,7 @@ app.post('/api/mcp/run', async (req, res) => {
     }
     
     // Collect tools if provided
-    let selectedTools: any[] = [];
+    let selectedTools: Tool[] = [];
     if (toolIds && Array.isArray(toolIds)) {
       toolIds.forEach(id => {
         if (tools[id]) {
