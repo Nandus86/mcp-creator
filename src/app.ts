@@ -107,13 +107,42 @@ const pool = new Pool({
   database: process.env.POSTGRES_DB || 'mcpdb',
 });
 
-// Testar a conexão com o banco
+// Função para inicializar as tabelas
+async function initializeTables() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS tools (
+        id TEXT PRIMARY KEY,
+        tool_set JSONB NOT NULL
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS configurations (
+        id TEXT PRIMARY KEY,
+        config JSONB NOT NULL
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS prompts (
+        id TEXT PRIMARY KEY,
+        prompt TEXT NOT NULL
+      )
+    `);
+    console.log('Tabelas verificadas/criadas com sucesso.');
+  } catch (error) {
+    console.error('Erro ao criar tabelas:', error);
+    process.exit(1);
+  }
+}
+
+// Testar a conexão com o banco e inicializar tabelas
 pool.connect((err) => {
   if (err) {
     console.error('Erro ao conectar ao PostgreSQL:', err);
     process.exit(1);
   }
   console.log('Conectado ao PostgreSQL com sucesso.');
+  initializeTables();
 });
 
 // Middleware
@@ -231,13 +260,23 @@ app.post('/api/tools', async (req, res) => {
   if (!id || !toolSet || !Array.isArray(toolSet)) {
     return res.status(400).json({ error: 'ID and array of tools are required' });
   }
-  const mappedToolSet = toolSet.map((tool: any) => (tool instanceof Tool ? tool : new Tool(tool)));
+  // Serializar o toolSet para JSON puro
+  const serializedToolSet = toolSet.map((tool: any) => {
+    const toolInstance = tool instanceof Tool ? tool : new Tool(tool);
+    return {
+      type: toolInstance.type,
+      function: toolInstance.function,
+      ...Object.fromEntries(
+        Object.entries(toolInstance).filter(([key]) => key !== 'type' && key !== 'function')
+      ),
+    };
+  });
   try {
     await pool.query(
       'INSERT INTO tools (id, tool_set) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET tool_set = $2',
-      [id, mappedToolSet]
+      [id, serializedToolSet]
     );
-    res.status(201).json({ id, toolSet: mappedToolSet });
+    res.status(201).json({ id, toolSet: serializedToolSet });
   } catch (error) {
     res.status(500).json({ error: 'Failed to save tool set', details: error.message });
   }
@@ -248,16 +287,26 @@ app.put('/api/tools/:id', async (req, res) => {
   if (!toolSet || !Array.isArray(toolSet)) {
     return res.status(400).json({ error: 'Array of tools is required' });
   }
-  const mappedToolSet = toolSet.map((tool: any) => (tool instanceof Tool ? tool : new Tool(tool)));
+  // Serializar o toolSet para JSON puro
+  const serializedToolSet = toolSet.map((tool: any) => {
+    const toolInstance = tool instanceof Tool ? tool : new Tool(tool);
+    return {
+      type: toolInstance.type,
+      function: toolInstance.function,
+      ...Object.fromEntries(
+        Object.entries(toolInstance).filter(([key]) => key !== 'type' && key !== 'function')
+      ),
+    };
+  });
   try {
     const result = await pool.query(
       'UPDATE tools SET tool_set = $1 WHERE id = $2 RETURNING *',
-      [mappedToolSet, req.params.id]
+      [serializedToolSet, req.params.id]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Tool set not found' });
     }
-    res.json({ id: req.params.id, toolSet: mappedToolSet });
+    res.json({ id: req.params.id, toolSet: serializedToolSet });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update tool set', details: error.message });
   }
