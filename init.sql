@@ -1,0 +1,14 @@
+CREATE TABLE IF NOT EXISTS tools (
+  id TEXT PRIMARY KEY,
+  tool_set JSONB NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS configurations (
+  id TEXT PRIMARY KEY,
+  config JSONB NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS prompts (
+  id TEXT PRIMARY KEY,
+  prompt TEXT NOT NULL
+);
