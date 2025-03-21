@@ -1,7 +1,7 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
-import { MCPClient, Tool, MCPResponse } from '@modelcontextprotocol/sdk';
+import { MCPClient, Tool, MCPResponse } from '@modelcontextprotocol/typescript-sdk';
 
 const app = express();
 const port = process.env.PORT || 3000;

@@ -9,7 +9,7 @@
       "dev": "ts-node src/app.ts"
     },
     "dependencies": {
-      "@modelcontextprotocol/sdk": "github:modelcontextprotocol/typescript-sdk",
+      "@modelcontextprotocol/typescript-sdk": "github:modelcontextprotocol/typescript-sdk",
       "body-parser": "^1.20.2",
       "cors": "^2.8.5",
       "express": "^4.18.2"
