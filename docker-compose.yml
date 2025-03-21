@@ -3,7 +3,7 @@ version: '3'
 services:
   mcp-creator:
     build: .
-    image: mcp-creator
+    image: nandus86/mcp-creator:latest
     container_name: mcp-creator
     restart: unless-stopped
     ports:
