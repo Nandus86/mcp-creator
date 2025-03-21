@@ -1,35 +1,6 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import express from 'express';
 
-// Criar o servidor MCP
-const mcpServer = new McpServer({
-  name: 'mcp-server-nandus',
-  version: '1.0.0',
-});
-
-// Ferramenta inicial
-mcpServer.tool(
-  'somar',
-  {
-    a: { type: 'number', description: 'Primeiro número' },
-    b: { type: 'number', description: 'Segundo número' },
-  },
-  async ({ a, b }) => {
-    return {
-      content: [{ type: 'text', text: `A soma de ${a} e ${b} é ${Number(a) + Number(b)}` }],
-    };
-  }
-);
-
-// Transporte stdio para testes locais
-async function startMcpServer() {
-  const transport = new StdioServerTransport();
-  await mcpServer.connect(transport);
-  console.log('MCP Server rodando com transporte stdio');
-}
-
-// Transporte HTTP temporário usando Express
+// Transporte HTTP usando Express
 const app = express();
 const port = process.env.MCP_SERVER_PORT || 3001;
 app.use(express.json());
@@ -60,9 +31,7 @@ app.post('/chat/completions', async (req, res) => {
   });
 });
 
-// Iniciar tudo
-startMcpServer().then(() => {
-  app.listen(port, () => {
-    console.log(`MCP Server (HTTP temporário) rodando em http://localhost:${port}`);
-  });
+// Iniciar o servidor
+app.listen(port, () => {
+  console.log(`MCP Server (HTTP) rodando em http://localhost:${port}`);
 });

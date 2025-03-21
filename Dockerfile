@@ -5,7 +5,7 @@ WORKDIR /app
 # Instalar git (necessário para pacotes do GitHub)
 RUN apk add --no-cache git
 
-# Copy package.json and package-lock.json
+# Copiar package.json e package-lock.json
 COPY package*.json ./
 
 # Instalar dependências
@@ -15,12 +15,12 @@ RUN npm install || (echo "Falha na instalação inicial, tentando novamente com 
 COPY tsconfig.json ./
 COPY src ./src
 
-# Construir código TypeScript com opção para ignorar erros e avisos
-RUN npm run build || (echo "Compilação com erros, gerando JS diretamente..." && npx tsc --skipLibCheck --noEmitOnError false)
+# Construir código TypeScript
+RUN npm run build
 
-# Expor a porta em que a aplicação roda
-EXPOSE 3000 
-EXPOSE 3001 
+# Expor as portas em que as aplicações rodam
+EXPOSE 3000  # Para o mediador (app.ts)
+EXPOSE 3001  # Para o MCP Server (server.ts)
 
 # Comando para executar a aplicação
 CMD ["node", "dist/start.js"]
