@@ -1,24 +1,30 @@
 FROM node:18-alpine
 
-RUN apk add --no-cache git
-
 WORKDIR /app
+
+# Instalar git (necessário para pacotes do GitHub)
+RUN apk add --no-cache git
 
 # Copy package.json and package-lock.json
 COPY package*.json ./
 
-# Install dependencies
+# Instalar dependências
 RUN npm install
 
-# Copy source code
+# Se o SDK do MCP não estiver disponível via npm, instale diretamente do GitHub
+RUN if ! npm list @modelcontextprotocol/typescript-sdk; then \
+    npm install github:modelcontextprotocol/typescript-sdk; \
+    fi
+
+# Copiar código fonte
 COPY tsconfig.json ./
 COPY src ./src
 
-# Build TypeScript code
+# Construir código TypeScript
 RUN npm run build
 
-# Expose the port the app runs on
+# Expor a porta em que a aplicação roda
 EXPOSE 3000
 
-# Command to run the application
+# Comando para executar a aplicação
 CMD ["npm", "start"]

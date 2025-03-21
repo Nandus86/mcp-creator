@@ -1,7 +1,53 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
-import { MCPClient, Tool, MCPResponse } from '@modelcontextprotocol/typescript-sdk';
+
+// Tente importar o SDK MCP
+let MCPClient, Tool;
+try {
+  const mcpModule = require('@modelcontextprotocol/typescript-sdk');
+  MCPClient = mcpModule.MCPClient;
+  Tool = mcpModule.Tool;
+} catch (error) {
+  console.warn('Aviso: Não foi possível importar @modelcontextprotocol/typescript-sdk');
+  console.warn('Usando implementação simulada para desenvolvimento');
+  
+  // Implementação simulada do MCPClient para desenvolvimento
+  MCPClient = class MCPClient {
+    constructor(config) {
+      this.config = config;
+      this.chat = {
+        completions: {
+          create: async (params) => {
+            console.log('Simulando chamada MCP com parâmetros:', params);
+            return {
+              id: 'sim_' + Date.now(),
+              object: 'chat.completion',
+              created: Date.now(),
+              model: params.model,
+              choices: [
+                {
+                  index: 0,
+                  message: {
+                    role: 'assistant',
+                    content: 'Esta é uma resposta simulada do MCP. Em produção, seria substituída pela resposta real da API.'
+                  },
+                  finish_reason: 'stop'
+                }
+              ]
+            };
+          }
+        }
+      };
+    }
+  };
+  
+  Tool = class Tool {
+    constructor(params) {
+      Object.assign(this, params);
+    }
+  };
+}
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -12,7 +58,7 @@ app.use(bodyParser.json());
 
 // Store configurations, tools and prompts
 let configurations: Record<string, any> = {};
-let tools: Record<string, Tool[]> = {};
+let tools: Record<string, any[]> = {};
 let prompts: Record<string, string> = {};
 
 // Initialize MCP client
@@ -159,7 +205,7 @@ app.post('/api/mcp/run', async (req, res) => {
     }
     
     // Collect tools if provided
-    let selectedTools: Tool[] = [];
+    let selectedTools: any[] = [];
     if (toolIds && Array.isArray(toolIds)) {
       toolIds.forEach(id => {
         if (tools[id]) {
