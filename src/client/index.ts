@@ -1,6 +1,6 @@
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { HttpClientTransport } from "@modelcontextprotocol/sdk/client/http.js";
-import { OdooParams } from "../shared/types.js";
+import { Client } from "@modelcontextprotocol/sdk/client";
+import { HttpClientTransport } from "@modelcontextprotocol/sdk/client/http";
+import { OdooParams } from "../shared/types";
 import readline from "readline";
 
 // Interface para entrada de linha de comando
@@ -80,7 +80,9 @@ async function main() {
     });
     
     // Processar e exibir resultado
-    const textoResultado = resultado.content.find(item => item.type === "text")?.text;
+    const textoResultado = resultado.content ? 
+      resultado.content.find((item: { type: string; text?: string }) => item.type === "text")?.text 
+      : "Sem conteúdo na resposta";
     
     if (resultado.isError) {
       console.error("Erro na requisição Odoo:");

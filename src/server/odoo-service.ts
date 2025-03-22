@@ -1,5 +1,5 @@
 import axios from "axios";
-import { OdooParams, OdooResponse } from "../shared/types.js";
+import { OdooParams, OdooResponse } from "../shared/types";
 
 export class OdooService {
   async executeKw(params: OdooParams): Promise<OdooResponse> {

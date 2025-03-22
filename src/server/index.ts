@@ -1,8 +1,8 @@
 import express from "express";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
-import { OdooParamsSchema } from "../shared/types.js";
-import { OdooService } from "./odoo-service.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse";
+import { OdooParams, OdooParamsSchema } from "../shared/types";
+import { OdooService } from "./odoo-service";
 
 // Criar o servidor Express
 const app = express();
@@ -21,7 +21,7 @@ const odooService = new OdooService();
 mcpServer.tool(
   "odoo-search-read",
   OdooParamsSchema,
-  async (params) => {
+  async (params: OdooParams) => {
     try {
       console.log("Recebendo requisição para Odoo:", params);
       

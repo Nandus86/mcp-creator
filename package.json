@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "MCP server and client for Odoo integration",
   "main": "dist/server/index.js",
+  "type": "commonjs",
   "scripts": {
     "build": "tsc",
     "start": "node dist/server/index.js",

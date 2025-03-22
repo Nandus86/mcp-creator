@@ -3,17 +3,24 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Instalar dependências
-COPY package.json package-lock.json* ./
+COPY package.json ./
 RUN npm install
 
 # Copiar código-fonte
-COPY . .
+COPY tsconfig.json ./
+COPY src ./src
+
+# Verificar que todos os arquivos estão presentes
+RUN ls -la && ls -la src/
 
 # Compilar TypeScript
-RUN npm run build
+RUN npx tsc
+
+# Verificar compilação
+RUN ls -la dist/
 
 # Expor a porta para o servidor MCP
 EXPOSE 3001
 
 # Comando para iniciar o servidor
-CMD ["npm", "run", "start"]
+CMD ["node", "dist/server/index.js"]
