@@ -1,33 +1,20 @@
 version: '3.8'
 
 services:
-  mcp-creator:
-    build: .
-    image: nandus86/mcp-creator:latest
-    container_name: mcp-creator
-    restart: unless-stopped
+  mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "3000:3000"  # Porta do mediador (app.ts)
-      - "3001:3001"  # Porta do MCP Server (server.ts)
-    environment:
-      - PORT=3000
-      - MCP_SERVER_PORT=3001
-      - MCP_API_KEY=your_mcp_api_key
-      - MCP_BASE_URL=http://localhost:3001  # Aponta para o MCP Server no mesmo container
+      - "3001:3001"
     volumes:
-      - mcp-data:/app/data
-    labels:
-      # Roteamento para o mediador (mcp.nandus.com.br)
-      - "traefik.enable=true"
-      - "traefik.http.routers.mcp-creator.rule=Host(`mcp.nandus.com.br`)"
-      - "traefik.http.routers.mcp-creator.entrypoints=websecure"
-      - "traefik.http.routers.mcp-creator.tls.certresolver=myresolver"
-      - "traefik.http.services.mcp-creator.loadbalancer.server.port=3000"
-      # Roteamento para o MCP Server (mcp-server.nandus.com.br)
-      - "traefik.http.routers.mcp-server.rule=Host(`mcp-server.nandus.com.br`)"
-      - "traefik.http.routers.mcp-server.entrypoints=websecure"
-      - "traefik.http.routers.mcp-server.tls.certresolver=myresolver"
-      - "traefik.http.services.mcp-server.loadbalancer.server.port=3001"
+      - ./src:/app/src
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    networks:
+      - mcp-network
 
-volumes:
-  mcp-data:
+networks:
+  mcp-network:
+    driver: bridge

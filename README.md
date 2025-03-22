@@ -1,139 +1,81 @@
-# MCP Creator
+# MCP Odoo Connector
 
-Uma aplicação para criar e gerenciar protocolos MCP (Model Context Protocol) baseado no [typescript-sdk](https://github.com/modelcontextprotocol/typescript-sdk).
+Este projeto implementa um servidor e cliente MCP (Model Context Protocol) para interação com APIs Odoo.
+
+## Sobre
+
+O MCP Odoo Connector facilita a comunicação entre sistemas de IA baseados em MCP e servidores Odoo, permitindo que agentes de IA interajam com dados e funções do Odoo de forma padronizada.
 
 ## Requisitos
 
-- Docker
-- Portainer (opcional, para gerenciamento)
-- Traefik (opcional, para roteamento e certificados HTTPS)
+- Node.js 18+
+- Docker e Docker Compose
+- Um servidor Odoo acessível
 
-## Configuração
+## Instalação
+
+### Com Docker (recomendado)
 
 1. Clone este repositório
-2. Edite o arquivo `docker-compose.yml` para definir as variáveis de ambiente:
-   - `MCP_API_KEY`: Sua chave API do MCP
-   - `MCP_BASE_URL`: URL base da API MCP
-
-## Implantação
-
-### Usando Docker Compose:
+2. Execute:
 
 ```bash
 docker-compose up -d
 ```
 
-### Usando Portainer:
+### Sem Docker
 
-1. Acesse seu Portainer
-2. Vá para "Stacks" e clique em "Add stack"
-3. Dê um nome para o stack (ex: "mcp-creator")
-4. Cole o conteúdo do arquivo `docker-compose.yml` no editor
-5. Clique em "Deploy the stack"
-
-## Endpoints da API
-
-A aplicação expõe os seguintes endpoints:
-
-### Configurações
-
-- `GET /api/configurations` - Listar todas as configurações
-- `GET /api/configurations/:id` - Obter uma configuração específica
-- `POST /api/configurations` - Criar uma nova configuração
-- `PUT /api/configurations/:id` - Atualizar uma configuração existente
-- `DELETE /api/configurations/:id` - Excluir uma configuração
-
-### Ferramentas (Tools)
-
-- `GET /api/tools` - Listar todos os conjuntos de ferramentas
-- `GET /api/tools/:id` - Obter um conjunto específico de ferramentas
-- `POST /api/tools` - Criar um novo conjunto de ferramentas
-- `PUT /api/tools/:id` - Atualizar um conjunto existente de ferramentas
-- `DELETE /api/tools/:id` - Excluir um conjunto de ferramentas
-
-### Prompts
-
-- `GET /api/prompts` - Listar todos os prompts
-- `GET /api/prompts/:id` - Obter um prompt específico
-- `POST /api/prompts` - Criar um novo prompt
-- `PUT /api/prompts/:id` - Atualizar um prompt existente
-- `DELETE /api/prompts/:id` - Excluir um prompt
-
-### Execução MCP
-
-- `POST /api/mcp/run` - Executar um prompt MCP com configurações e ferramentas específicas
-
-## Exemplos de Uso
-
-### Criar uma configuração:
+1. Clone este repositório
+2. Instale as dependências:
 
 ```bash
-curl -X POST https://mcp.nandus.com.br/api/configurations \
-  -H "Content-Type: application/json" \
-  -d '{
-    "id": "default-config",
-    "config": {
-      "model": "gpt-4",
-      "max_tokens": 1000,
-      "temperature": 0.7
-    }
-  }'
+npm install
 ```
 
-### Criar um conjunto de ferramentas:
+3. Compile o código TypeScript:
 
 ```bash
-curl -X POST https://mcp.nandus.com.br/api/tools \
-  -H "Content-Type: application/json" \
-  -d '{
-    "id": "basic-tools",
-    "toolSet": [
-      {
-        "type": "function",
-        "function": {
-          "name": "get_weather",
-          "description": "Get current weather in a given location",
-          "parameters": {
-            "type": "object",
-            "properties": {
-              "location": {
-                "type": "string",
-                "description": "The city and state, e.g. San Francisco, CA"
-              }
-            },
-            "required": ["location"]
-          }
-        }
-      }
-    ]
-  }'
+npm run build
 ```
 
-### Criar um prompt:
+4. Inicie o servidor:
 
 ```bash
-curl -X POST https://mcp.nandus.com.br/api/prompts \
-  -H "Content-Type: application/json" \
-  -d '{
-    "id": "weather-prompt",
-    "prompt": "Por favor, forneça o clima atual para a seguinte localização: {{location}}"
-  }'
+npm start
 ```
 
-### Executar um prompt MCP:
+## Uso
+
+### Servidor MCP
+
+O servidor MCP expõe uma ferramenta chamada `odoo-search-read` que permite consultar dados no Odoo.
+
+Ele é acessível em: `http://localhost:3001/mcp/sse`
+
+### Cliente MCP
+
+Para testar o cliente MCP:
 
 ```bash
-curl -X POST https://mcp.nandus.com.br/api/mcp/run \
-  -H "Content-Type: application/json" \
-  -d '{
-    "configId": "default-config",
-    "promptId": "weather-prompt",
-    "toolIds": ["basic-tools"],
-    "messages": [
-      {
-        "role": "user",
-        "content": "Qual é o clima em São Paulo hoje?"
-      }
-    ]
-  }'
+npm run client
 ```
+
+O cliente solicitará informações sobre o servidor Odoo e executará uma consulta.
+
+## Estrutura do Projeto
+
+- `src/server/` - Código do servidor MCP
+- `src/client/` - Cliente de teste para o MCP
+- `src/shared/` - Tipos e utilitários compartilhados
+
+## Configuração Personalizada
+
+Você pode modificar as configurações no arquivo `docker-compose.yml` para alterar:
+
+- Porta de exposição do servidor
+- Variáveis de ambiente
+- Volumes para persistência
+
+## Licença
+
+MIT

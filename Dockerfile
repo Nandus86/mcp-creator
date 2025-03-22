@@ -1,26 +1,19 @@
-FROM node:20-alpine
+FROM node:18-alpine
 
 WORKDIR /app
 
-# Instalar git (necessário para pacotes do GitHub)
-RUN apk add --no-cache git
-
-# Copiar package.json e package-lock.json
-COPY package*.json ./
-
 # Instalar dependências
-RUN npm install || (echo "Falha na instalação inicial, tentando novamente com flags de tolerância..." && npm install --no-fund --no-audit --legacy-peer-deps)
+COPY package.json package-lock.json* ./
+RUN npm install
 
-# Copiar código fonte
-COPY tsconfig.json ./
-COPY src ./src
+# Copiar código-fonte
+COPY . .
 
-# Construir código TypeScript
+# Compilar TypeScript
 RUN npm run build
 
-# Expor as portas em que as aplicações rodam
-EXPOSE 3000
+# Expor a porta para o servidor MCP
 EXPOSE 3001
 
-# Comando para executar a aplicação
-CMD ["node", "dist/start.js"]
+# Comando para iniciar o servidor
+CMD ["npm", "run", "start"]
