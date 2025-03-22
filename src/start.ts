@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import './odoo-server';
 
 // Iniciar o mediador (app.ts)
 const mediator = spawn('node', ['dist/app.js'], {
