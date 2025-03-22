@@ -1,5 +1,5 @@
-import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio";
 import { z } from "zod";
 import { Pool } from "pg";
 
@@ -66,7 +66,6 @@ function serializeZodSchema(schema: any): any {
 function deserializeZodSchema(serializedSchema: any): any {
   if (!serializedSchema) return null;
   // Para simplificar, vamos recriar o schema manualmente com base no nome da ferramenta/recurso/prompt
-  // Em um caso real, você precisaria implementar uma lógica mais robusta para recriar o schema Zod
   return serializedSchema;
 }
 
@@ -77,7 +76,6 @@ async function loadTools(server: McpServer) {
     const { name, schema: serializedSchema, handler } = row;
     const schema = deserializeZodSchema(serializedSchema);
 
-    // Recriar a lógica do handler com base no identificador
     if (handler === "add") {
       server.tool(
         name,
@@ -87,7 +85,6 @@ async function loadTools(server: McpServer) {
         })
       );
     }
-    // Adicione mais handlers conforme necessário
     console.log(`Ferramenta ${name} carregada do banco.`);
   }
 }
@@ -102,7 +99,6 @@ async function loadResources(server: McpServer) {
       serializedTemplate.options
     );
 
-    // Recriar a lógica do handler com base no identificador
     if (handler === "greeting") {
       server.resource(
         name,
@@ -117,7 +113,6 @@ async function loadResources(server: McpServer) {
         })
       );
     }
-    // Adicione mais handlers conforme necessário
     console.log(`Recurso ${name} carregado do banco.`);
   }
 }
@@ -128,9 +123,6 @@ async function loadPrompts(server: McpServer) {
   for (const row of result.rows) {
     const { name, schema: serializedSchema, handler } = row;
     const schema = deserializeZodSchema(serializedSchema);
-
-    // Recriar a lógica do handler com base no identificador
-    // Adicione handlers de prompts conforme necessário
     console.log(`Prompt ${name} carregado do banco.`);
   }
 }
