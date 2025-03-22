@@ -1,46 +1,186 @@
-import express from 'express';
+import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
+import { Pool } from "pg";
 
-const app = express();
-const port = process.env.MCP_SERVER_PORT || 3001;
-app.use(express.json());
-
-// Middleware para autenticação
-app.use((req, res, next) => {
-  const apiKey = req.headers['x-api-key'] || req.query.apiKey;
-  const expectedApiKey = process.env.MCP_API_KEY || '06c453d8-18ca-4e33-b321-81ae2be84ff1';
-  if (!apiKey || apiKey !== expectedApiKey) {
-    return res.status(401).json({ error: 'Unauthorized: Invalid API key' });
-  }
-  next();
+// Configuração do cliente PostgreSQL
+const pool = new Pool({
+  host: process.env.POSTGRES_HOST || "localhost",
+  port: parseInt(process.env.POSTGRES_PORT || "5432", 10),
+  user: process.env.POSTGRES_USER || "mcpuser",
+  password: process.env.POSTGRES_PASSWORD || "mcp123",
+  database: process.env.POSTGRES_DB || "mcpdb",
 });
 
-// Endpoint para receber chamadas do mediador
-app.post('/chat/completions', async (req, res) => {
-  const { messages, tools } = req.body;
-  let responseContent = 'Resposta padrão do MCP Server';
+// Função para inicializar as tabelas
+async function initializeTables() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS server_tools (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        schema JSONB NOT NULL,
+        handler TEXT NOT NULL
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS server_resources (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        template JSONB NOT NULL,
+        handler TEXT NOT NULL
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS server_prompts (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        schema JSONB NOT NULL,
+        handler TEXT NOT NULL
+      )
+    `);
+    console.log("Tabelas verificadas/criadas com sucesso.");
+  } catch (error) {
+    console.error("Erro ao criar tabelas:", error);
+    process.exit(1);
+  }
+}
 
-  if (tools && messages) {
-    const userMsg = messages.find((m: any) => m.role === 'user');
-    if (userMsg?.content === 'Quanto é 5 + 3?' && tools.some((t: any) => t.function?.name === 'somar')) {
-      responseContent = 'A soma de 5 e 3 é 8';
+// Testar a conexão com o banco e inicializar tabelas
+pool.connect((err) => {
+  if (err) {
+    console.error("Erro ao conectar ao PostgreSQL:", err);
+    process.exit(1);
+  }
+  console.log("Conectado ao PostgreSQL com sucesso.");
+  initializeTables();
+});
+
+// Função para serializar schemas Zod para JSON
+function serializeZodSchema(schema: any): any {
+  if (!schema) return null;
+  return schema._def; // Serializa a definição do schema Zod
+}
+
+// Função para desserializar schemas Zod do JSON
+function deserializeZodSchema(serializedSchema: any): any {
+  if (!serializedSchema) return null;
+  // Para simplificar, vamos recriar o schema manualmente com base no nome da ferramenta/recurso/prompt
+  // Em um caso real, você precisaria implementar uma lógica mais robusta para recriar o schema Zod
+  return serializedSchema;
+}
+
+// Função para carregar e registrar ferramentas do banco
+async function loadTools(server: McpServer) {
+  const result = await pool.query("SELECT * FROM server_tools");
+  for (const row of result.rows) {
+    const { name, schema: serializedSchema, handler } = row;
+    const schema = deserializeZodSchema(serializedSchema);
+
+    // Recriar a lógica do handler com base no identificador
+    if (handler === "add") {
+      server.tool(
+        name,
+        { a: z.number(), b: z.number() },
+        async ({ a, b }) => ({
+          content: [{ type: "text", text: String(a + b) }],
+        })
+      );
     }
+    // Adicione mais handlers conforme necessário
+    console.log(`Ferramenta ${name} carregada do banco.`);
   }
+}
 
-  res.json({
-    id: `mcp_${Date.now()}`,
-    object: 'chat.completion',
-    created: Date.now(),
-    choices: [
-      {
-        index: 0,
-        message: { role: 'assistant', content: responseContent },
-        finish_reason: 'stop',
-      },
-    ],
-  });
+// Função para carregar e registrar recursos do banco
+async function loadResources(server: McpServer) {
+  const result = await pool.query("SELECT * FROM server_resources");
+  for (const row of result.rows) {
+    const { name, template: serializedTemplate, handler } = row;
+    const template = new ResourceTemplate(
+      serializedTemplate.template,
+      serializedTemplate.options
+    );
+
+    // Recriar a lógica do handler com base no identificador
+    if (handler === "greeting") {
+      server.resource(
+        name,
+        template,
+        async (uri, { name }) => ({
+          contents: [
+            {
+              uri: uri.href,
+              text: `Hello, ${name}!`,
+            },
+          ],
+        })
+      );
+    }
+    // Adicione mais handlers conforme necessário
+    console.log(`Recurso ${name} carregado do banco.`);
+  }
+}
+
+// Função para carregar e registrar prompts do banco
+async function loadPrompts(server: McpServer) {
+  const result = await pool.query("SELECT * FROM server_prompts");
+  for (const row of result.rows) {
+    const { name, schema: serializedSchema, handler } = row;
+    const schema = deserializeZodSchema(serializedSchema);
+
+    // Recriar a lógica do handler com base no identificador
+    // Adicione handlers de prompts conforme necessário
+    console.log(`Prompt ${name} carregado do banco.`);
+  }
+}
+
+// Create an MCP server
+const server = new McpServer({
+  name: "Demo",
+  version: "1.0.0",
 });
+
+// Função para inicializar o servidor
+async function initializeServer() {
+  // Adicionar a ferramenta de soma
+  const toolSchema = { a: z.number(), b: z.number() };
+  await pool.query(
+    `INSERT INTO server_tools (id, name, schema, handler) 
+     VALUES ($1, $2, $3, $4) 
+     ON CONFLICT (id) DO UPDATE SET name = $2, schema = $3, handler = $4`,
+    ["tool_add", "add", serializeZodSchema(toolSchema), "add"]
+  );
+
+  // Adicionar o recurso de saudação
+  const resourceTemplate = new ResourceTemplate("greeting://{name}", {
+    list: undefined,
+  });
+  await pool.query(
+    `INSERT INTO server_resources (id, name, template, handler) 
+     VALUES ($1, $2, $3, $4) 
+     ON CONFLICT (id) DO UPDATE SET name = $2, template = $3, handler = $4`,
+    [
+      "resource_greeting",
+      "greeting",
+      { template: "greeting://{name}", options: { list: undefined } },
+      "greeting",
+    ]
+  );
+
+  // Carregar ferramentas, recursos e prompts do banco
+  await loadTools(server);
+  await loadResources(server);
+  await loadPrompts(server);
+
+  // Start receiving messages on stdin and sending messages on stdout
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.log("Servidor MCP iniciado com sucesso.");
+}
 
 // Iniciar o servidor
-app.listen(port, () => {
-  console.log(`MCP Server (HTTP) rodando em http://localhost:${port}`);
+initializeServer().catch((error) => {
+  console.error("Erro ao iniciar o servidor:", error);
+  process.exit(1);
 });
