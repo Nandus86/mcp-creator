@@ -2,7 +2,7 @@
     "name": "mcp-creator",
     "version": "1.0.0",
     "scripts": {
-      "build": "tsc",
+      "build": "npx tsc",
       "start": "node dist/app.js"
     },
     "dependencies": {
