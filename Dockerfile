@@ -1,27 +1,16 @@
-# Usar uma imagem base com Node.js
-FROM node:20-alpine
+FROM python:3.9-slim
 
-# Definir o diretório de trabalho
 WORKDIR /app
 
-# Copiar package.json e package-lock.json (se existir)
-COPY package*.json ./
+# Instalar dependências
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Instalar as dependências no local correto
-RUN npm install
-
-# Copiar o restante do código para o diretório de trabalho
+# Copiar todos os arquivos do projeto
 COPY . .
 
-# Garantir permissões corretas
-RUN chmod -R 755 ./node_modules/.bin
+# Instalar dependências de desenvolvimento
+RUN pip install uvicorn
 
-# Compilar o código TypeScript usando o tsc do node_modules
-RUN npx tsc
-
-# Expor as portas em que a aplicação roda
-EXPOSE 3000
-EXPOSE 3001
-
-# Comando para iniciar a aplicação
-CMD ["npm", "start"]
+# Comando padrão (será sobrescrito no docker-compose)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
