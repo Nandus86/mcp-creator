@@ -11,7 +11,10 @@ WORKDIR /app
 COPY package.json ./
 
 # Instalar dependências (isso gerará o package-lock.json dentro da imagem)
-RUN npm install
+RUN npm install -g typescript
+
+# Garantir que tsc tenha permissão de execução
+RUN chmod +x ./node_modules/.bin/tsc
 
 # Adicionar node_modules/.bin ao PATH
 ENV PATH="/app/node_modules/.bin:${PATH}"
@@ -20,7 +23,8 @@ ENV PATH="/app/node_modules/.bin:${PATH}"
 COPY . .
 
 # Construir código TypeScript
-RUN npm run build
+RUN npx tsc
+
 
 # Expor as portas em que a aplicação roda
 EXPOSE 3000
