@@ -1,14 +1,20 @@
 # Usar uma imagem base com Node.js
 FROM node:20-alpine
 
+# Instalar dependências necessárias para o Alpine Linux
+RUN apk add --no-cache bash
+
 # Definir o diretório de trabalho
 WORKDIR /app
 
-# Copiar package.json e package-lock.json
-COPY package.json package-lock.json ./
+# Copiar package.json
+COPY package.json ./
 
-# Instalar dependências
+# Instalar dependências (isso gerará o package-lock.json dentro da imagem)
 RUN npm install
+
+# Verificar se o tsc está instalado e corrigir permissões
+RUN ls -la node_modules/.bin/tsc && chmod +x node_modules/.bin/tsc
 
 # Copiar o restante do código
 COPY . .
