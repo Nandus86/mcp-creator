@@ -1,34 +1,22 @@
-# Usar uma imagem base com Node.js
 FROM node:20-alpine
 
-# Instalar dependências necessárias para o Alpine Linux
-RUN apk add --no-cache bash
-
-# Definir o diretório de trabalho
 WORKDIR /app
 
-# Copiar package.json
-COPY package.json ./
+# Copiar package.json e package-lock.json (se existir)
+COPY package*.json ./
 
-# Instalar dependências (isso gerará o package-lock.json dentro da imagem)
-RUN npm install -g typescript
-
-# Garantir que tsc tenha permissão de execução
-RUN chmod +x ./node_modules/.bin/tsc
-
-# Adicionar node_modules/.bin ao PATH
-ENV PATH="/app/node_modules/.bin:${PATH}"
+# Instalar dependências (incluindo devDependencies)
+RUN npm install
 
 # Copiar o restante do código
 COPY . .
 
-# Construir código TypeScript
+# Compilar TypeScript
 RUN npx tsc
 
-
-# Expor as portas em que a aplicação roda
+# Expor as portas
 EXPOSE 3000
 EXPOSE 3001
 
-# Comando para iniciar a aplicação
+# Iniciar a aplicação
 CMD ["npm", "start"]
