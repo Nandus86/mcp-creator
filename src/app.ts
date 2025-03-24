@@ -83,6 +83,9 @@ const mcpServer = new McpServer({
 async function callExternalApi(params: ApiParams, config: ApiParams) {
   const { address, database, databaseId, password, model, method, fields } = params;
   const url = address || config.address;
+  if (!url) {
+    throw new Error("API address is required but was not provided in params or config");
+  }
   const body = {
     jsonrpc: "2.0",
     method: "call",

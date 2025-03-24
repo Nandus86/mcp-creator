@@ -1,18 +1,14 @@
-declare module "@modelcontextprotocol/sdk/client/index" {
+declare module "@modelcontextprotocol/sdk" {
   export class Client {
     constructor(config: { name: string; version: string }, capabilities: any);
     connect(transport: any): Promise<void>;
     callTool(params: { name: string; arguments: any }): Promise<any>;
   }
-}
 
-declare module "@modelcontextprotocol/sdk/client/stdio" {
   export class StdioClientTransport {
     constructor(options: { command: string; args: string[] });
   }
-}
 
-declare module "@modelcontextprotocol/sdk/server/mcp" {
   export class McpServer {
     constructor(config: { name: string; version: string });
     tool(name: string, schema: any, handler: (args: any) => Promise<any>): void;
@@ -28,9 +24,7 @@ declare module "@modelcontextprotocol/sdk/server/mcp" {
   export class ResourceTemplate {
     constructor(pattern: string, options: { list?: any });
   }
-}
 
-declare module "@modelcontextprotocol/sdk/server/stdio" {
   export class StdioServerTransport {
     constructor();
   }
