@@ -2,10 +2,10 @@ import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
 import { Pool } from "pg";
-import { Client } from "@modelcontextprotocol/sdk/client/index";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio";
-import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio";
+import { Client } from "@modelcontextprotocol/sdk/client";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client-stdio";
+import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server-stdio";
 import { z } from "zod";
 import fetch from "node-fetch";
 
