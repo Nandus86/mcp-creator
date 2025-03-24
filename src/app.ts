@@ -46,7 +46,11 @@ async function initializeTables() {
     `);
     console.log("Tabelas verificadas/criadas com sucesso.");
   } catch (error) {
-    console.error("Erro ao criar tabelas:", error);
+    if (error instanceof Error) {
+      console.error("Erro ao criar tabelas:", error.message);
+    } else {
+      console.error("Erro ao criar tabelas:", error);
+    }
     process.exit(1);
   }
 }
@@ -185,7 +189,11 @@ app.post("/api/tools", async (req, res) => {
     );
     res.status(201).json({ id, toolSet });
   } catch (error) {
-    res.status(500).json({ error: "Failed to save tool set", details: error.message });
+    if (error instanceof Error) {
+      res.status(500).json({ error: "Failed to save tool set", details: error.message });
+    } else {
+      res.status(500).json({ error: "Failed to save tool set", details: String(error) });
+    }
   }
 });
 
@@ -202,7 +210,11 @@ app.post("/api/prompts", async (req, res) => {
     );
     res.status(201).json({ id, name, schema, handler });
   } catch (error) {
-    res.status(500).json({ error: "Failed to save prompt", details: error.message });
+    if (error instanceof Error) {
+      res.status(500).json({ error: "Failed to save prompt", details: error.message });
+    } else {
+      res.status(500).json({ error: "Failed to save prompt", details: String(error) });
+    }
   }
 });
 
@@ -219,7 +231,11 @@ app.post("/api/configurations", async (req, res) => {
     );
     res.status(201).json({ id, config });
   } catch (error) {
-    res.status(500).json({ error: "Failed to save configuration", details: error.message });
+    if (error instanceof Error) {
+      res.status(500).json({ error: "Failed to save configuration", details: error.message });
+    } else {
+      res.status(500).json({ error: "Failed to save configuration", details: String(error) });
+    }
   }
 });
 
@@ -259,7 +275,11 @@ app.post("/api/process", async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: "Failed to process request", details: error.message });
+    if (error instanceof Error) {
+      res.status(500).json({ error: "Failed to process request", details: error.message });
+    } else {
+      res.status(500).json({ error: "Failed to process request", details: String(error) });
+    }
   }
 });
 
