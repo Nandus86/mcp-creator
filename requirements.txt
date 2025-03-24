@@ -1,23 +1,17 @@
 # Dependências principais
-fastapi==0.95.2
-uvicorn==0.22.0
-sqlalchemy==2.0.12
-psycopg2-binary==2.9.6
-pydantic==1.10.7
-requests==2.28.2
+fastapi==0.68.0
+uvicorn==0.15.0
+sqlalchemy==1.4.22
+psycopg2-binary==2.9.1
+pydantic==1.8.2
+requests==2.26.0
 
 # Ferramentas de desenvolvimento e testes
-pytest==7.3.1
-httpx==0.24.0
-python-dotenv==1.0.0
+pytest==6.2.5
+httpx==0.19.0
+python-dotenv==0.19.0
 
-# Documentação de API
-python-jose[cryptography]==3.3.0
-python-multipart==0.0.6
-passlib[bcrypt]==1.7.4
-
-# Substituir swagger-ui por uma alternativa
-pip-system-certs==4.3.1
-
-# Utilitários
-email-validator==2.0.0
+# Utilitários de autenticação
+python-jose==3.3.0
+python-multipart==0.0.5
+passlib==1.7.4
