@@ -1,20 +1,79 @@
 version: '3.8'
 
 services:
-  mcp-server:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "3001:3001"
-    volumes:
-      - ./src:/app/src
-    environment:
-      - NODE_ENV=production
+  mcp-client:
+    build: ./mcp-client
+    image: nandus86/mcp-client:latest
+    container_name: mcp-client
     restart: unless-stopped
     networks:
-      - mcp-network
+      - mcp
+    ports:
+      - "3100:3000"
+    environment:
+      - PORT=3000
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=mcpuser
+      - POSTGRES_PASSWORD=mcp123
+      - POSTGRES_DB=mcpdb
+    depends_on:
+      - db
+      - mcp-server
+    volumes:
+      - mcp-data:/app/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mcp-client.rule=Host(`mcp.nandus.com.br`)"
+      - "traefik.http.routers.mcp-client.entrypoints=websecure"
+      - "traefik.http.routers.mcp-client.tls.certresolver=leresolver"
+      - "traefik.http.routers.mcp-client.service=mcp-client"
+      - "traefik.http.services.mcp-client.loadbalancer.server.port=3000"
+
+  mcp-server:
+    build: ./mcp-server
+    image: nandus86/mcp-server:latest
+    container_name: mcp-server
+    restart: unless-stopped
+    networks:
+      - mcp
+    ports:
+      - "3101:3001"
+    environment:
+      - PORT=3001
+      - API_ADDRESS=https://default-api.com
+      - DATABASE_NAME=default_db
+      - DATABASE_ID=1
+      - DATABASE_PASSWORD=default_password
+    volumes:
+      - mcp-data:/app/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mcp-server.rule=Host(`mcp-server.nandus.com.br`)"
+      - "traefik.http.routers.mcp-server.entrypoints=websecure"
+      - "traefik.http.routers.mcp-server.tls.certresolver=leresolver"
+      - "traefik.http.routers.mcp-server.service=mcp-server"
+      - "traefik.http.services.mcp-server.loadbalancer.server.port=3001"
+
+  db:
+    image: postgres:15
+    container_name: mcp-postgres
+    restart: unless-stopped
+    networks:
+      - mcp
+    environment:
+      - POSTGRES_USER=mcpuser
+      - POSTGRES_PASSWORD=mcp123
+      - POSTGRES_DB=mcpdb
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  mcp-data:
+  postgres-data:
 
 networks:
-  mcp-network:
-    driver: bridge
+  mcp:
+    external: true
