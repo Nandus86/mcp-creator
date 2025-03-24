@@ -2,12 +2,20 @@ import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
 import { Pool } from "pg";
-import { Client } from "@modelcontextprotocol/sdk/client";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client-stdio";
-import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server-stdio";
+import { Client, StdioClientTransport, McpServer, ResourceTemplate, StdioServerTransport } from "@modelcontextprotocol/sdk";
 import { z } from "zod";
 import fetch from "node-fetch";
+
+// Definição dos tipos para params e config
+interface ApiParams {
+  address?: string;
+  database?: string;
+  databaseId?: number;
+  password?: string;
+  model?: string;
+  method?: string;
+  fields?: string[];
+}
 
 // Configuração do cliente PostgreSQL
 const pool = new Pool({
@@ -72,7 +80,7 @@ const mcpServer = new McpServer({
 });
 
 // Função para fazer chamadas à API externa
-async function callExternalApi(params: any, config: any) {
+async function callExternalApi(params: ApiParams, config: ApiParams) {
   const { address, database, databaseId, password, model, method, fields } = params;
   const url = address || config.address;
   const body = {
@@ -119,9 +127,9 @@ mcpServer.tool(
     method: z.string().optional(),
     fields: z.array(z.string()).optional(),
   }),
-  async (params) => {
+  async (params: ApiParams) => {
     // Configuração padrão (pode ser sobrescrita por uma configuração do banco)
-    const config = {
+    const config: ApiParams = {
       address: process.env.API_ADDRESS || "https://default-api.com",
       database: process.env.DATABASE_NAME || "default_db",
       databaseId: parseInt(process.env.DATABASE_ID || "1", 10),
