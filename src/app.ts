@@ -4,6 +4,10 @@ import cors from "cors";
 import { Pool } from "pg";
 import { Client } from "@modelcontextprotocol/sdk/client/index";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio";
+import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio";
+import { z } from "zod";
+import fetch from "node-fetch";
 
 // Configuração do cliente PostgreSQL
 const pool = new Pool({
@@ -57,15 +61,78 @@ pool.connect((err) => {
   initializeTables();
 });
 
-const app = express();
-const port = process.env.PORT || 3000;
+// Configuração do servidor MCP
+const mcpServer = new McpServer({
+  name: "mcp-server",
+  version: "1.0.0",
+});
 
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
+// Função para fazer chamadas à API externa
+async function callExternalApi(params: any, config: any) {
+  const { address, database, databaseId, password, model, method, fields } = params;
+  const url = address || config.address;
+  const body = {
+    jsonrpc: "2.0",
+    method: "call",
+    params: {
+      service: "object",
+      method: "execute_kw",
+      args: [
+        database || config.database,
+        databaseId || config.databaseId,
+        password || config.password,
+        model || config.model,
+        method || config.method,
+        [[]],
+        { fields: fields || config.fields || [] },
+      ],
+    },
+  };
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = await response.json();
+  return {
+    content: [{ type: "text", text: JSON.stringify(data) }],
+  };
+}
+
+// Registrar ferramentas dinamicamente no servidor MCP
+mcpServer.tool(
+  "api_call",
+  z.object({
+    address: z.string().optional(),
+    database: z.string().optional(),
+    databaseId: z.number().optional(),
+    password: z.string().optional(),
+    model: z.string().optional(),
+    method: z.string().optional(),
+    fields: z.array(z.string()).optional(),
+  }),
+  async (params) => {
+    // Configuração padrão (pode ser sobrescrita por uma configuração do banco)
+    const config = {
+      address: process.env.API_ADDRESS || "https://default-api.com",
+      database: process.env.DATABASE_NAME || "default_db",
+      databaseId: parseInt(process.env.DATABASE_ID || "1", 10),
+      password: process.env.DATABASE_PASSWORD || "default_password",
+      model: "default.model",
+      method: "read",
+      fields: ["name"],
+    };
+
+    return callExternalApi(params, config);
+  }
+);
 
 // Configuração do cliente MCP
-const client = new Client(
+const mcpClient = new Client(
   {
     name: "mcp-client",
     version: "1.0.0",
@@ -79,15 +146,30 @@ const client = new Client(
   }
 );
 
-// Conectar ao servidor MCP
-async function connectToServer() {
+// Conectar o cliente ao servidor MCP
+async function connectClientToServer() {
   const transport = new StdioClientTransport({
     command: "node",
-    args: ["/app/mcp-server/dist/server.js"],
+    args: ["/app/dist/app.js"],
   });
-  await client.connect(transport);
+  await mcpClient.connect(transport);
   console.log("Cliente MCP conectado ao servidor.");
 }
+
+// Iniciar o servidor MCP
+async function startServer() {
+  const transport = new StdioServerTransport();
+  await mcpServer.connect(transport);
+  console.log("Servidor MCP iniciado com sucesso.");
+}
+
+// Configuração do Express (Cliente)
+const app = express();
+const port = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
+app.use(bodyParser.json());
 
 // Endpoints para ferramentas
 app.post("/api/tools", async (req, res) => {
@@ -170,7 +252,7 @@ app.post("/api/process", async (req, res) => {
     const config = configResult.rows[0].config;
 
     // Enviar a requisição ao servidor MCP
-    const result = await client.callTool({
+    const result = await mcpClient.callTool({
       name: toolSet[0].function.name,
       arguments: params,
     });
@@ -181,9 +263,9 @@ app.post("/api/process", async (req, res) => {
   }
 });
 
-// Iniciar o cliente
-connectToServer().then(() => {
+// Iniciar o cliente e o servidor
+Promise.all([startServer(), connectClientToServer()]).then(() => {
   app.listen(port, () => {
-    console.log(`Cliente MCP rodando em http://localhost:${port}`);
+    console.log(`Aplicação MCP rodando em http://localhost:${port}`);
   });
 });

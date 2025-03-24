@@ -1,17 +1,22 @@
 version: '3.8'
 
 services:
-  mcp-client:
-    build: ./mcp-client
-    image: nandus86/mcp-client:latest
-    container_name: mcp-client
+  mcp-creator:
+    build: .
+    image: nandus86/mcp-creator:latest
+    container_name: mcp-creator
     restart: unless-stopped
     networks:
       - mcp
     ports:
       - "3100:3000"
+      - "3101:3001"
     environment:
       - PORT=3000
+      - API_ADDRESS=https://default-api.com
+      - DATABASE_NAME=default_db
+      - DATABASE_ID=1
+      - DATABASE_PASSWORD=default_password
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
       - POSTGRES_USER=mcpuser
@@ -19,36 +24,15 @@ services:
       - POSTGRES_DB=mcpdb
     depends_on:
       - db
-      - mcp-server
     volumes:
       - mcp-data:/app/data
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.mcp-client.rule=Host(`mcp.nandus.com.br`)"
-      - "traefik.http.routers.mcp-client.entrypoints=websecure"
-      - "traefik.http.routers.mcp-client.tls.certresolver=leresolver"
-      - "traefik.http.routers.mcp-client.service=mcp-client"
-      - "traefik.http.services.mcp-client.loadbalancer.server.port=3000"
-
-  mcp-server:
-    build: ./mcp-server
-    image: nandus86/mcp-server:latest
-    container_name: mcp-server
-    restart: unless-stopped
-    networks:
-      - mcp
-    ports:
-      - "3101:3001"
-    environment:
-      - PORT=3001
-      - API_ADDRESS=https://default-api.com
-      - DATABASE_NAME=default_db
-      - DATABASE_ID=1
-      - DATABASE_PASSWORD=default_password
-    volumes:
-      - mcp-data:/app/data
-    labels:
-      - "traefik.enable=true"
+      - "traefik.http.routers.mcp-creator.rule=Host(`mcp.nandus.com.br`)"
+      - "traefik.http.routers.mcp-creator.entrypoints=websecure"
+      - "traefik.http.routers.mcp-creator.tls.certresolver=leresolver"
+      - "traefik.http.routers.mcp-creator.service=mcp-creator"
+      - "traefik.http.services.mcp-creator.loadbalancer.server.port=3000"
       - "traefik.http.routers.mcp-server.rule=Host(`mcp-server.nandus.com.br`)"
       - "traefik.http.routers.mcp-server.entrypoints=websecure"
       - "traefik.http.routers.mcp-server.tls.certresolver=leresolver"
