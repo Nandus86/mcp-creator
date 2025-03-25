@@ -24,35 +24,34 @@ def execute_api(tool_id: str, payload: Dict[str, Any], db: Session = Depends(get
     if not config:
         raise HTTPException(status_code=404, detail="API Configuration not found")
 
-    # Headers: Combina os headers da configuração com Content-Type padrão, se aplicável
+    # Headers
     headers = config.headers or {}
     if "Content-Type" not in headers:
         headers["Content-Type"] = "application/json"
 
-    # Monta o corpo da requisição: Combina additional_params com o payload
+    # Monta o corpo da requisição
     request_body = config.additional_params or {}
-    if payload.get("body"):
-        request_body.update(payload["body"])  # Usa o 'body' do payload para sobrescrever ou complementar
-    elif "args" in payload:
-        request_body = payload["args"]  # Se só tiver 'args', usa diretamente como corpo
-
-    # Método HTTP da configuração
-    method = config.method.lower()
-    http_methods = {
-        "get": requests.get,
-        "post": requests.post,
-        "put": requests.put,
-        "delete": requests.delete,
-        "patch": requests.patch
-    }
-
-    if method not in http_methods:
-        raise HTTPException(status_code=400, detail=f"Método HTTP inválido: {method}")
+    
+    # Combina os argumentos do payload com os da configuração
+    if payload.get("body") and "params" in payload["body"]:
+        payload_params = payload["body"].get("params", {})
+        if "args" in payload_params:
+            # Concatena os args da configuração com os do payload
+            config_args = request_body.get("params", {}).get("args", [])
+            payload_args = payload_params["args"]
+            combined_args = config_args + payload_args
+            # Atualiza o request_body com os args combinados
+            request_body.setdefault("params", {}).update({
+                "service": payload_params.get("service", request_body.get("params", {}).get("service", "object")),
+                "method": payload_params.get("method", request_body.get("params", {}).get("method", "execute_kw")),
+                "args": combined_args
+            })
 
     try:
-        # Faz a requisição com o método especificado
-        response = http_methods[method](
-            config.base_url,
+        # Faz a requisição
+        response = requests.request(
+            method=config.method.lower(),
+            url=config.base_url,
             headers=headers,
             json=request_body if request_body else None
         )
