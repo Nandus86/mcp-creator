@@ -2,11 +2,15 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:13
+    image: postgres:15
     environment:
       POSTGRES_DB: mcp_db
       POSTGRES_USER: mcpuser
       POSTGRES_PASSWORD: mcppassword
+    ports:
+      - "5454:5432"
+    networks:
+      - mcp
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -14,24 +18,42 @@ services:
   mcp-client:
     build: .
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8100:8000"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.mcp-client.rule=Host(`mcp.nandus.com.br`)"
+      - "traefik.http.routers.mcp-client.tls=true"
+      - "traefik.http.routers.mcp-client.tls.certresolver=leresolver"
+      - "traefik.http.routers.mcp-client.entrypoints=websecure"
+      - "traefik.http.routers.mcp-client.service=mcp-client"
       - "traefik.http.services.mcp-client.loadbalancer.server.port=8000"
     depends_on:
       - postgres
-      - traefik
+    networks:
+      - mcp
 
   mcp-server:
     build: .
     command: uvicorn app.main:app --host 0.0.0.0 --port 8001
+    ports:
+      - "8101:8001"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.mcp-server.rule=Host(`mcp-server.nandus.com.br`)"
+      - "traefik.http.routers.mcp-server.tls=true"
+      - "traefik.http.routers.mcp-server.tls.certresolver=leresolver"
+      - "traefik.http.routers.mcp-server.entrypoints=websecure"
+      - "traefik.http.routers.mcp-server.service=mcp-server"
       - "traefik.http.services.mcp-server.loadbalancer.server.port=8001"
     depends_on:
       - postgres
-      - traefik
+    networks:
+      - mcp
 
 volumes:
   postgres-data:
+
+networks:
+  mcp:
+    external: true
