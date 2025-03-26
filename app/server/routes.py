@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 import requests
+import json
 
 from ..database import get_db
 from .models import APIConfiguration
@@ -35,9 +36,20 @@ def execute_api(tool_id: str, payload: Dict[str, Any], db: Session = Depends(get
     logger.debug(f"Headers configurados: {headers}")
 
     request_body = config.additional_params or {}
+    
+    # Verifica se o payload contém 'body' e faz o parsing se necessário
     if payload.get("body"):
-        if "params" in payload["body"]:  # Para APIs JSON-RPC como Odoo
-            payload_params = payload["body"].get("params", {})
+        body = payload["body"]
+        # Se o body for uma string, faz o parse para JSON
+        if isinstance(body, str):
+            try:
+                body = json.loads(body)
+            except json.JSONDecodeError as e:
+                logger.error(f"Erro ao fazer parse do body como JSON: {str(e)}")
+                raise HTTPException(status_code=400, detail="O campo 'body' contém uma string JSON inválida")
+        
+        if "params" in body:  # Para APIs JSON-RPC como Odoo
+            payload_params = body.get("params", {})
             if "args" in payload_params:
                 config_args = request_body.get("params", {}).get("args", [])
                 payload_args = payload_params["args"]
@@ -48,7 +60,7 @@ def execute_api(tool_id: str, payload: Dict[str, Any], db: Session = Depends(get
                     "args": combined_args
                 })
         else:  # Para APIs REST simples como Evolution
-            request_body = payload["body"]  # Usa o body diretamente
+            request_body = body  # Usa o body diretamente (agora como objeto JSON)
     elif "args" in payload:
         request_body = payload["args"]
     
